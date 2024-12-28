@@ -1,0 +1,1 @@
+# Ce dossier contient la gestion d’erreurs, middlewares, etc.

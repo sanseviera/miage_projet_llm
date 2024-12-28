@@ -1,0 +1,1 @@
+# Ce dossier contient les outils transverses (caching, logs, etc.)
