@@ -1,0 +1,7 @@
+streamlit
+python-dotenv
+PyPDF2
+unidecode
+pdfminer.six
+langchain
+pymongo
