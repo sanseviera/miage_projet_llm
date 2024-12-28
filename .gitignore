@@ -1,4 +1,16 @@
-venv/
+# Fichiers à ignorer
 .env
 __pycache__/
 *.py[cod]
+*.log
+*.csv
+*.json
+*.pickle
+*.pkl
+*.h5
+*.npy
+
+# Dossiers à ignorer
+venv/
+logs/
+.vscode/

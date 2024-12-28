@@ -1,0 +1,1 @@
+# Ce dosser contient les fichiers de l'application prompt_engineering qui permet de générer des prompts pour l'API OpenAI
