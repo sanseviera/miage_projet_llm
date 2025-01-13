@@ -51,7 +51,10 @@ class RAGService:
             self.vector_store = None
             
         # Découpage des textes
-        splits = self.text_splitter.split_text(texts)
+        splits = []
+        for text in texts:
+            splits.extend(self.text_splitter.split_text(text))
+        # splits = self.text_splitter.split_text(texts)
         
         if self.vector_store is None:
             # Création initiale
