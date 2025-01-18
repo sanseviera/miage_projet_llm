@@ -31,16 +31,6 @@ rag_service = RAGService()
 # Inclure les routes
 app.include_router(api_router)
 
-@app.get("/chat/documents")
-async def get_documents():
-    try:
-        documents = rag_service.get_all_documents()
-        formatted_response = {
-            "documents": documents
-        }
-        return JSONResponse(content=json.dumps(formatted_response, indent=4))
-    except ValueError as e:
-        return JSONResponse(content=json.dumps({"error": str(e)}, indent=4))
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

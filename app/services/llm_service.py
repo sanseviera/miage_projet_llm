@@ -17,6 +17,8 @@ from services.tools import AssistantTools
 import os
 from typing import List, Dict, Optional
 from services.rag_service import RAGService
+import logging 
+import re
 
 class LLMService:
 
@@ -31,11 +33,19 @@ class LLMService:
             model_name="gpt-3.5-turbo",
             api_key=api_key
         )
+        self.rag_service = RAGService()
         
         # Configuration pour le TP2
         self.conversation_store = {}
+        # self.prompt = ChatPromptTemplate.from_messages([
+        #     ("system", "Vous êtes un assistant utile et concis."),
+        #     MessagesPlaceholder(variable_name="history"),
+        #     ("human", "{question}")
+        # ])
         self.prompt = ChatPromptTemplate.from_messages([
-            ("system", "Vous êtes un assistant utile et concis."),
+            ("system", "Vous êtes un assistant utile et concis. "
+                      "Utilisez le contexte fourni pour répondre aux questions."),
+            ("system", "Contexte : {context}"),
             MessagesPlaceholder(variable_name="history"),
             ("human", "{question}")
         ])
@@ -82,86 +92,71 @@ class LLMService:
             self.conversation_store[session_id] = EnhancedMemoryHistory()
         return self.conversation_store[session_id]
     
-    """async def generate_response(self,message: str,session_id: str) -> str:
-        #Génère une réponse et sauvegarde dans MongoDB
-        # Récupération de l'historique depuis MongoDB
+    async def generate_response(self, message: str, session_id: str, context: Optional[List[Dict[str, str]]] = None, use_rag: bool = False) -> str:
+        # Retrieve conversation history
         history = await self.mongo_service.get_conversation_history(session_id)
-        # Conversion de l'historique en messages LangChain
-        messages = [SystemMessage(content="Vous êtes un assistant utile et concis.")]
+
+        # Initialize RAG context
+        rag_context = ""
+        if use_rag:
+            # Fetch relevant documents for RAG
+            relevant_docs = await self.rag_service.similarity_search(message)
+            if relevant_docs:
+                # rag_context = "\n\n".join([doc.page_content for doc in relevant_docs])
+                rag_context = "\n\n".join([f"- {doc.page_content}" for doc in relevant_docs])
+                logging.info(f"RAG Context generated: {rag_context}")
+
+        # Include context in messages for the LLM
+        messages = [SystemMessage(content="You are a helpful assistant.")]
+        if rag_context:
+            messages.append(SystemMessage(content=f"Context: {rag_context}"))
+
+        # Add history to messages
         for msg in history:
             if msg["role"] == "user":
                 messages.append(HumanMessage(content=msg["content"]))
             elif msg["role"] == "assistant":
                 messages.append(AIMessage(content=msg["content"]))
-        # Ajout du nouveau message
-        messages.append(HumanMessage(content=message))
-        # Génération de la réponse
-        response = await self.llm.agenerate([messages])
-        response_text = response.generations[0][0].text
-        # Sauvegarde des messages dans MongoDB
-        await self.mongo_service.save_message(session_id, "user", message)
-        await self.mongo_service.save_message(session_id, "assistant", response_text)
-        return response_text"""
-    async def generate_response(self, 
-                              message: str, 
-                              context: Optional[List[Dict[str, str]]] = None,
-                              session_id: Optional[str] = None,
-                              use_rag: bool = False) -> str:
-        """Méthode mise à jour pour supporter le RAG"""
-        rag_context = ""
-        if use_rag and self.rag_service.vector_store:
-            relevant_docs = await self.rag_service.similarity_search(message)
-            rag_context = "\n\n".join(relevant_docs)
-        
-        if session_id:
-            response = await self.chain_with_history.ainvoke(
-                {
-                    "question": message,
-                    "context": rag_context
-                },
-                config={"configurable": {"session_id": session_id}}
-            )
-            return response.content
-        else:
-            messages = [
-                SystemMessage(content="Vous êtes un assistant utile et concis.")
-            ]
-            
-            if rag_context:
-                messages.append(SystemMessage(
-                    content=f"Contexte : {rag_context}"
-                ))
-            
-            if context:
-                for msg in context:
-                    if msg["role"] == "user":
-                        messages.append(HumanMessage(content=msg["content"]))
-                    elif msg["role"] == "assistant":
-                        messages.append(AIMessage(content=msg["content"]))
-            
-            messages.append(HumanMessage(content=message))
-            response = await self.llm.agenerate([messages])
-            response_text = response.generations[0][0].text
-            return response_text
 
-        # 6) Sauvegarde dans MongoDB
+        # Add user query
+        messages.append(HumanMessage(content=message))
+
+        # Generate response with the chain
+        response = await self.chain_with_history.ainvoke(
+            {"question": message, "context": rag_context},
+            config={"configurable": {"session_id": session_id}}
+        )
+        response_text = response.content
+
+        # Save the messages to MongoDB
         await self.mongo_service.save_message(session_id, "user", message)
         await self.mongo_service.save_message(session_id, "assistant", response_text)
 
         return response_text
+
     
     async def get_conversation_history(self, session_id: str) -> List[Dict[str, str]]:
         """Récupère l'historique depuis MongoDB"""
         return await self.mongo_service.get_conversation_history(session_id)
-    
     """ Exo 2 : Ajout de la méthode pour le TP2 """
     # Ajout de la méthode pour générer un résumé
-    async def generate_summary(self, text: str) -> Dict[str, Any]:
-        return await self.summary_service.generate_summary(text)
+    async def generate_summary(self, text: str, max_length: int) -> Dict[str, Any]:
+        try:
+            print("text", text)
+            logging.info(f"Original text: {text}")
+            sanitized_text = text.replace(" ", " ").replace("\n", " ")
+            print(sanitized_text)
+            logging.info(f"Sanitized text: {sanitized_text}")
+            result = await self.summary_service.generate_summary(sanitized_text, max_length)
+            logging.info(f"Summary result: {result}")
+            return result
+        except Exception as e:
+            logging.error(f"Error during summary generation: {str(e)}")
+            raise ValueError(f"Erreur lors de la génération du résumé : {str(e)}")
+
     
     def cleanup_inactive_sessions(self):
         """Nettoie les sessions inactives"""
-        current_time = datetime.now()
         for session_id, history in list(self.conversation_store.items()):
             if not history.is_active():
                 del self.conversation_store[session_id]
