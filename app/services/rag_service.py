@@ -127,7 +127,7 @@ class RAGService:
         if os.path.exists(self.persist_dir):
             shutil.rmtree(self.persist_dir)
             os.makedirs(self.persist_dir)
-        self.vector_store = None
+        # self.vector_store = None
         logging.info("Vector store cleared.")
 
     async def get_context(self) -> str:
