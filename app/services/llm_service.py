@@ -19,8 +19,12 @@ from typing import List, Dict, Optional
 from services.rag_service import RAGService
 import logging 
 import re
+from pymongo.collection import Collection
 
 class LLMService:
+
+    def __init__(self):
+        self.mongo_service = MongoService("DATABASE_NAME")
 
     def __init__(self):
         api_key = os.getenv("OPENAI_API_KEY")
@@ -164,3 +168,18 @@ class LLMService:
     # Ajout de la méthode pour l'appel aux outils de l'assistant
     async def process_with_tools(self, query: str) -> str:
             return await self.tools.process_request(query)
+    
+    # async def get_all_conversation_ids(self) -> List[str]:
+    #     try:
+    #         collection: Collection = self.mongo_service.get_collection("conversations")
+    #         session_ids = collection.distinct("session_id")
+    #         return session_ids
+    #     except Exception as e:
+    #         logging.error(f"Error retrieving conversation IDs: {str(e)}")
+    #         raise ValueError(f"Error retrieving conversation IDs: {str(e)}")
+
+    async def get_all_conversation_ids(self) -> List[str]:
+        collection = self.mongo_service.get_collection("conversations")
+        cursor = collection.find({}, {"session_id": 1})
+        sessions = await cursor.to_list(length=None)  # Correctly handle cursor
+        return [doc["session_id"] for doc in sessions]

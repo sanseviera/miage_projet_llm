@@ -209,3 +209,14 @@ async def get_documents():
     except ValueError as e:
         # return JSONResponse(content=json.dumps({"error": str(e)}, indent=4))
         return {"error": str(e)}
+    
+# Endpoint to get all the session_id only (meaning the id of the conversation)
+@router.get("/chat/sessions", response_model=List[str])
+async def get_all_sessions():
+    try:
+        session_ids = await llm_service.get_all_conversation_ids()
+        return session_ids
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
