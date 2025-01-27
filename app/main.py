@@ -8,6 +8,15 @@ from services.rag_service import RAGService
 from fastapi.responses import JSONResponse
 import json
 
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"message": "Hello, Heroku!"}
+
+
 load_dotenv()
 
 app = FastAPI(
