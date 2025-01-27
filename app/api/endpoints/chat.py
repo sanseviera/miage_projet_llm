@@ -2,10 +2,10 @@ from datetime import datetime
 import json
 from fastapi import APIRouter, HTTPException, Body
 from fastapi.responses import JSONResponse
-from models.chat import ChatRequestTP1, ChatRequestTP2, ChatRequestWithContext, ChatResponse, SummaryResponse, SummaryRequest, ChatRequestAdv, MemoryTagRequest, MemoryClearRequest, MetadataResponse, ToolRequest
-from services.llm_service import LLMService
+from app.models.chat import ChatRequestTP1, ChatRequestTP2, ChatRequestWithContext, ChatResponse, SummaryResponse, SummaryRequest, ChatRequestAdv, MemoryTagRequest, MemoryClearRequest, MetadataResponse, ToolRequest
+from app.services.llm_service import LLMService
 from typing import Dict, List
-from services.rag_service import RAGService 
+from app.services.rag_service import RAGService 
 from fastapi import UploadFile, File, Body, HTTPException
 from typing import List
 import os
