@@ -1,6 +1,7 @@
 from typing import Any, Dict
 from langchain.chains import LLMChain, SequentialChain
 from langchain.prompts import PromptTemplate
+import logging
 
 class SummaryService:
     def __init__(self, llm):
@@ -61,17 +62,20 @@ class SummaryService:
             input_variables=["text"],
             output_variables=["full_summary", "bullet_points", "one_liner"]
         )
-    
-    async def generate_summary(self, text: str) -> Dict[str, Any]:
+
+    async def generate_summary(self, text: str, max_length: int) -> Dict[str, Any]:
         try:
+            logging.info(f"Received text: {text}")
+            logging.info(f"Received max_length: {max_length}")
+
             # Étape 1 : Résumé complet
-            full_summary_result = await self.full_summary_chain.arun({"text": text})
+            full_summary_result = await self.full_summary_chain.arun({"text": text, "max_length": max_length})
             
             # Étape 2 : Points clés
-            bullet_points_result = await self.bullet_points_chain.arun({"full_summary": full_summary_result})
+            bullet_points_result = await self.bullet_points_chain.arun({"full_summary": full_summary_result, "max_length": max_length})
             
             # Étape 3 : Phrase de synthèse
-            one_liner_result = await self.one_liner_chain.arun({"bullet_points": bullet_points_result})
+            one_liner_result = await self.one_liner_chain.arun({"bullet_points": bullet_points_result, "max_length": max_length})
             
             return {
                 "full_summary": full_summary_result,
@@ -79,4 +83,5 @@ class SummaryService:
                 "one_liner": one_liner_result
             }
         except Exception as e:
+            logging.error(f"Error during summary generation: {str(e)}")
             raise ValueError(f"Erreur lors de la génération du résumé : {str(e)}")

@@ -37,8 +37,19 @@ class MongoService:
         result = await self.conversations.delete_one({"session_id": session_id})
         return result.deleted_count > 0
     
+    # async def get_all_sessions(self) -> List[str]:
+    #     """Récupère tous les IDs de session"""
+    #     cursor = self.conversations.find({}, {"session_id": 1})
+    #     sessions = await cursor.to_list(length=None)
+    #     return [session["session_id"] for session in sessions]
+
     async def get_all_sessions(self) -> List[str]:
-        """Récupère tous les IDs de session"""
         cursor = self.conversations.find({}, {"session_id": 1})
-        sessions = await cursor.to_list(length=None)
-        return [session["session_id"] for session in sessions]
+        sessions = []
+        async for session in cursor:
+            sessions.append(session["session_id"])
+        return sessions
+
+    
+    def get_collection(self, collection_name: str):
+        return self.db[collection_name]
