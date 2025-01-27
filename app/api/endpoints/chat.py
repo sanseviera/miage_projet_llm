@@ -9,6 +9,8 @@ from services.rag_service import RAGService
 from fastapi import UploadFile, File, Body, HTTPException
 from typing import List
 import os
+import mimetypes
+import uuid
 
 router = APIRouter()
 llm_service = LLMService()
@@ -83,6 +85,21 @@ async def get_history(session_id: str) -> List[Dict[str, str]]:
             history_as_str.append(converted_item)
 
         return history_as_str  # On renvoie la liste "typée" comme List[Dict[str, str]]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Endpoint to create new chat session
+@router.post("/chat/new-session")
+async def create_new_session() -> dict:
+    """
+    Endpoint pour créer une nouvelle session de chat
+    """
+    try:
+        # session_id = str(uuid.uuid4())
+        # Create a new session in the conversation store
+        # llm_service.create_new_session(session_id)
+        session_id = await llm_service.create_new_session()
+        return {"session_id": session_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -162,10 +179,9 @@ async def get_history(session_id: str) -> List[Dict[str, str]]:
 
 @router.post("/documents/index")
 async def index_documents(
-    texts: List[str] = Body(...),
-    files: List[UploadFile] = File(None),
+    files: List[str] = Body(...),
     clear_existing: bool = Body(False)
-) -> dict:
+    ) -> dict:
     """
     Endpoint pour indexer des documents
     
@@ -174,18 +190,25 @@ async def index_documents(
         clear_existing: Si True, supprime l'index existant avant d'indexer
     """
     try:
-        if texts:
-        # await llm_service.rag_service.load_and_index_texts(texts, clear_existing)
-            await rag_service.load_and_index_texts(texts, clear_existing)
-        
-        if files:
-            upload_dir = "./uploads"
-            os.makedirs(upload_dir, exist_ok=True)  
-            for file in files:
-                file_path = os.path.join(upload_dir, file.filename)
+        processed_texts = []
+        upload_dir = "./uploads"
+        os.makedirs(upload_dir, exist_ok=True)  # Ensure the directory exists
+
+        for content in files:
+            # Determine if the content is a PDF or plain text
+            if content.startswith("%PDF-"):
+                # Save the content as a PDF file
+                file_path = os.path.join(upload_dir, f"{uuid.uuid4()}.pdf")
                 with open(file_path, "wb") as f:
-                    f.write(await file.read())
-                await rag_service.load_and_index_pdf(file_path, clear_existing)
+                    f.write(content.encode('latin1'))  # PDF content should be in binary format
+                text = rag_service.extract_text_from_pdf(file_path)
+            else:
+                # Treat the content as plain text
+                text = content
+
+            processed_texts.append(text)
+
+        await rag_service.load_and_index_texts(processed_texts, clear_existing)
 
         return {"message": "Documents indexed successfully"}
     except Exception as e:

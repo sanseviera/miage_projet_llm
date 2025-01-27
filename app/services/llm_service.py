@@ -20,6 +20,7 @@ from services.rag_service import RAGService
 import logging 
 import re
 from pymongo.collection import Collection
+import uuid
 
 class LLMService:
 
@@ -169,17 +170,38 @@ class LLMService:
     async def process_with_tools(self, query: str) -> str:
             return await self.tools.process_request(query)
     
-    # async def get_all_conversation_ids(self) -> List[str]:
-    #     try:
-    #         collection: Collection = self.mongo_service.get_collection("conversations")
-    #         session_ids = collection.distinct("session_id")
-    #         return session_ids
-    #     except Exception as e:
-    #         logging.error(f"Error retrieving conversation IDs: {str(e)}")
-    #         raise ValueError(f"Error retrieving conversation IDs: {str(e)}")
 
     async def get_all_conversation_ids(self) -> List[str]:
         collection = self.mongo_service.get_collection("conversations")
         cursor = collection.find({}, {"session_id": 1})
-        sessions = await cursor.to_list(length=None)  # Correctly handle cursor
+        sessions = await cursor.to_list(length=None)  
         return [doc["session_id"] for doc in sessions]
+    
+    async def create_new_session(self) -> str:
+        collection = self.mongo_service.get_collection("conversations")
+        
+        cursor = collection.find({"session_id": {"$regex": "^session_\\d+$"}}, {"session_id": 1})
+        sessions = await cursor.to_list(length=None)
+        
+        session_numbers = []
+        for doc in sessions:
+            match = re.match(r"session_(\d+)", doc["session_id"])
+            if match:
+                session_numbers.append(int(match.group(1)))
+        
+        if session_numbers:
+            new_number = max(session_numbers) + 1
+        else:
+            new_number = 1
+        
+        session_id = f"session_{new_number}"
+        new_session = {
+            "session_id": session_id,
+            # "created_at": datetime.utcnow(),
+            # "last_activity": datetime.utcnow(),
+            # "message_count": 0,
+            # "tags": [],
+            # "summary": "",
+        }
+        await collection.insert_one(new_session)
+        return session_id
