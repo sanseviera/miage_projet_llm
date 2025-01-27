@@ -3,20 +3,20 @@ from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 import os
 from typing import Any, List, Dict
-from services.mongo_service import MongoService
+from app.services.mongo_service import MongoService
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
-from services.memory import InMemoryHistory
-from services.memoryAdvenced import EnhancedMemoryHistory
-from services.chains import SummaryService
-from services.tools import AssistantTools
+from app.services.memory import InMemoryHistory
+from app.services.memoryAdvenced import EnhancedMemoryHistory
+from app.services.chains import SummaryService
+from app.services.tools import AssistantTools
 import os
 from typing import List, Dict, Optional
-from services.rag_service import RAGService
+from app.services.rag_service import RAGService
 import logging 
 import re
 from pymongo.collection import Collection
