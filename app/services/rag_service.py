@@ -6,6 +6,7 @@ from langchain.schema import Document
 import os
 import shutil
 import logging
+import fitz
 
 class RAGService:
     def __init__(self, persist_dir: str = "./data/vectorstore"):
@@ -37,6 +38,14 @@ class RAGService:
             )
         else:
             self.vector_store = None
+
+    def extract_text_from_pdf(self, pdf_path: str) -> str:
+        text = ""
+        with fitz.open(pdf_path) as pdf_document:
+            for page_num in range(len(pdf_document)):
+                page = pdf_document.load_page(page_num)
+                text += page.get_text()
+        return text
 
     async def load_and_index_texts(self, texts: List[str], clear_existing: bool = False) -> None:
         """
@@ -72,6 +81,14 @@ class RAGService:
             
         # Persistance explicite
         self.vector_store.persist()
+
+
+    async def load_and_index_pdf(self, pdf_path: str, clear_existing: bool = False) -> None:
+        # Extract text from the PDF file
+        text = self.extract_text_from_pdf(pdf_path)
+        
+        # Split and index the extracted text
+        await self.load_and_index_texts([text], clear_existing=clear_existing)
     
     async def similarity_search(self, query: str, k: int = 4) -> List[Document]:
         """

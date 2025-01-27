@@ -6,6 +6,8 @@ from models.chat import ChatRequestTP1, ChatRequestTP2, ChatRequestWithContext, 
 from services.llm_service import LLMService
 from typing import Dict, List
 from services.rag_service import RAGService 
+from fastapi import UploadFile, File, Body, HTTPException
+from typing import List
 
 router = APIRouter()
 llm_service = LLMService()
@@ -160,6 +162,7 @@ async def get_history(session_id: str) -> List[Dict[str, str]]:
 @router.post("/documents/index")
 async def index_documents(
     texts: List[str] = Body(...),
+    file: UploadFile = File(None),
     clear_existing: bool = Body(False)
 ) -> dict:
     """
@@ -170,8 +173,16 @@ async def index_documents(
         clear_existing: Si True, supprime l'index existant avant d'indexer
     """
     try:
+        if texts:
         # await llm_service.rag_service.load_and_index_texts(texts, clear_existing)
-        await rag_service.load_and_index_texts(texts, clear_existing)
+            await rag_service.load_and_index_texts(texts, clear_existing)
+        
+        if file:
+            file_path = f"./uploads/{file.filename}"
+            with open(file_path, "wb") as f:
+                f.write(await file.read())
+            await rag_service.load_and_index_pdf(file_path, clear_existing)
+            
         return {"message": "Documents indexed successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
