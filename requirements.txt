@@ -101,3 +101,5 @@ Werkzeug==3.0.1
 wrapt==1.14.1
 motor
 pydantic-settings
+PyMuPDF
+fitz
