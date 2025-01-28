@@ -102,4 +102,3 @@ wrapt==1.14.1
 motor
 pydantic-settings
 PyMuPDF
-fitz
