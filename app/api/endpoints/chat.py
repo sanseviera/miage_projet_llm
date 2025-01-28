@@ -176,18 +176,12 @@ async def create_new_session() -> dict:
 #     except Exception as e:
 #         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/documents/index")
+"""@router.post("/documents/index")
 async def index_documents(
     files: List[str] = Body(...),
     clear_existing: bool = Body(False)
 ) -> dict:
-    """
-    Endpoint pour indexer des documents
-    
-    Args:
-        texts: Liste des textes à indexer
-        clear_existing: Si True, supprime l'index existant avant d'indexer
-    """
+
     try:
         processed_texts = []
         upload_dir = "./uploads"
@@ -204,6 +198,39 @@ async def index_documents(
             else:
                 # Treat the content as plain text
                 text = content
+
+            processed_texts.append(text)
+
+        await rag_service.load_and_index_texts(processed_texts, clear_existing)
+
+        return {"message": "Documents indexed successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))"""
+@router.post("/documents/index")
+async def index_documents(
+    # files: List[str] = Body(...),
+    files: List[UploadFile] = File(...),
+    clear_existing: bool = Body(False)
+    ) -> dict:
+    print(files[0])
+    try:
+        processed_texts = []
+        upload_dir = "./uploads"
+        os.makedirs(upload_dir, exist_ok=True)
+
+        for file in files:
+            file_path = os.path.join(upload_dir, file.filename)
+            with open(file_path, "wb") as f:
+                f.write(await file.read())
+
+            mimetype,  = mimetypes.guess_type(file_path)
+            if mime_type == "application/pdf":
+                text = rag_service.extract_text_from_pdf(file_path)
+            elif mime_type == "text/plain":
+                with open(file_path, "r", encoding="utf-8") as f:
+                    text = f.read()
+            else:
+                raise HTTPException(status_code=400, detail="Unsupported file type")
 
             processed_texts.append(text)
 
