@@ -1,184 +1,62 @@
-# Projet TP MIAGE M2 - Agent Conversationnel
+# BestProfiles Frontend
 
-## Structure du Projet
+BestProfiles Frontend est la partie utilisateur de la plateforme **BestProfiles**, qui vise à faciliter la présélection des candidatures grâce à l'utilisation d'algorithmes d'intelligence artificielle et de machine learning. Ce projet constitue la partie frontend (interface utilisateur) de la plateforme.
 
-```
-C:.
-├───api/                    # Gestion des routes et endpoints de l'API
-│   ├───endpoints/         # Endpoints spécifiques par fonctionnalité
-│   │   └───chat.py       # Endpoint pour les fonctionnalités de chat
-│   └───router.py         # Router principal regroupant tous les endpoints
-├───core/                  # Configuration et éléments centraux de l'application
-├───models/               # Modèles de données Pydantic
-│   └───chat.py          # Modèles pour les requêtes/réponses de chat
-├───services/            # Services métier
-│   └───llm_service.py   # Service d'interaction avec le LLM
-├───utils/               # Utilitaires et helpers
-└───main.py             # Point d'entrée de l'application
-```
+## Prérequis
 
-## Installation et Configuration
+Pour exécuter ce projet localement, assurez-vous d'avoir :
 
-### Prérequis
-- Python 3.11+ (ici : https://www.python.org/downloads/release/python-3110/ il faut redémarrer après installation pour avoir le $PATH sur l'OS)
-- Visual Studio Code avec l'extension Python
-- Une clé OpenAI que je vais vous fournir
+- **python version 3.9.20** 
 
-### Installation
+## Installation
 
-1. **Cloner le projet**
-```bash
-git clone <URL_DU_DEPOT>
-cd <NOM_DU_PROJET>
-```
+1. Clonez le dépôt :
 
-2. **Créer l'environnement virtuel**
-```bash
-python -m venv venv
-```
+   ```bash
+   git clone https://github.com/sanseviera/miage_projet_llm.git
+   ```
 
-3. **Activer l'environnement virtuel**
-- Windows :
-```bash
-.\venv\Scripts\activate
-```
-- macOS/Linux :
-```bash
-source venv/bin/activate
-```
+2. Accédez au répertoire du projet :
 
-4. **Installer les dépendances**
-```bash
-pip install -r requirements.txt
-```
+   ```bash
+   cd miage_projet_llm
+   ```
 
-5. **Configurer la clé API OpenAI**
-Créer un fichier `.env` à la racine du projet :
-```
-OPENAI_API_KEY=votre-clé-api-openai
-```
+3. Installez les dépendances :
 
+   ```bash
+   pip install -r requirements2.txt
+   ```
 
-## Explication des Composants
+## Utilisation
 
-### 1. Main Application (`main.py`)
-```python
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-```
-- Point d'entrée de l'application
-- Configure FastAPI et les middlewares
-- Initialise les routes
+1. Lancez le serveur de développement :
 
-### 2. Modèles (`models/chat.py`)
-```python
-class ChatRequest(BaseModel):
-    message: str
-```
-- Définit la structure des données entrantes/sortantes
-- Utilise Pydantic pour la validation des données
-- Version simple pour débuter, extensible pour le contexte
+   ```bash
+   cd app
+   ```
 
-### 3. Service LLM (`services/llm_service.py`)
-```python
-class LLMService:
-    def __init__(self):
-        self.llm = ChatOpenAI(...)
-```
-- Gère l'interaction avec le modèle de langage
-- Configure le client OpenAI
-- Traite les messages et le contexte
+   ```bash
+   python main.py
+   ```
 
-### 4. Router API (`api/router.py`)
-```python
-@router.post("/chat")
-async def chat(request: ChatRequest) -> ChatResponse:
-```
-- Définit les endpoints de l'API
-- Gère les requêtes HTTP
-- Valide les données entrantes
+2. Ouvrez votre navigateur et accédez (avec le frontend déjà lancé) à : [http://localhost:3000](http://localhost:3000)
 
-## Utilisation de l'API
+## Auteurs
 
-### Version Simple
-```bash
-curl -X 'POST' \
-  'http://localhost:8000/chat/simple' \
-  -H 'Content-Type: application/json' \
-  -d '{"message": "Bonjour!"}'
-```
+- **Serigne Rawane Diop** - Chef de projet, responsable produit et IA
+- **Théo Borreani** - Développeur Full Stack, ingénieur IHM et IA
+- **Tuan Linh Dao** - Ingénieur IA et sciences des données
+- **Ndeye Khar Diagne** - Responsable marketing, RSE et protection des données
 
-### Version avec Contexte
-```bash
-curl -X 'POST' \
-  'http://localhost:8000/chat/with-context' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "message": "Bonjour!",
-    "context": [
-      {"role": "user", "content": "Comment vas-tu?"},
-      {"role": "assistant", "content": "Je vais bien, merci!"}
-    ]
-  }'
-```
+---
 
-## Debugging avec VS Code
+## Liens utiles
 
-1. Ouvrir le projet dans VS Code
-2. Aller dans la section "Run and Debug" (Ctrl + Shift + D)
-3. Sélectionner la configuration "Python: FastAPI"
-4. Appuyer sur F5 ou cliquer sur le bouton Play
-5. Démarrer Swagger : http://127.0.0.1:8000/docs
+- **Frontend du projet** : [BestProfiles Frontend](https://github.com/dioprawane best_profiles_frontend)
 
-## Structure de l'API
+- **Documentation officielle** : [BestProfiles Wiki](#)
 
-### Endpoints Disponibles
+---
 
-- `/chat/simple` : Version basique sans contexte
-- `/chat/with-context` : Version avancée avec gestion du contexte
-
-### Flux de Données
-
-1. La requête arrive sur l'endpoint
-2. Les modèles Pydantic valident les données
-3. Le service LLM traite la demande
-4. La réponse est formatée et renvoyée
-
-## Progression Pédagogique
-
-1. **Démarrer avec la version simple**
-   - Comprendre la structure de base
-   - Tester les appels API simples
-
-2. **Évoluer vers la version avec contexte**
-   - Ajouter la gestion de l'historique
-   - Comprendre l'importance du contexte dans les LLM
-
-3. **Explorer les fonctionnalités avancées**
-   - Implémenter des prompts personnalisés
-   - Gérer différents types de réponses
-
-## Dépannage
-
-### Problèmes Courants
-
-1. **Erreur de clé API**
-   - Vérifier le fichier `.env`
-   - S'assurer que la clé est valide
-
-2. **Erreurs de dépendances**
-   - Vérifier l'activation du venv
-   - Réinstaller les requirements
-
-3. **Erreurs de contexte**
-   - Vérifier le format du contexte
-   - S'assurer que les rôles sont valides
-
-4. **Powershell**
-   - Si les droits admin ne sont pas présent : ''Set-ExecutionPolicy Unrestricted -Scope CurrentUser -Force''
-
-## Ressources
-
-- [Documentation FastAPI](https://fastapi.tiangolo.com/)
-- [Documentation LangChain](https://python.langchain.com/)
-- [API OpenAI](https://platform.openai.com/docs/api-reference)
+Équipez votre processus de recrutement avec **BestProfiles** !

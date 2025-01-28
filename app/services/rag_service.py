@@ -113,13 +113,6 @@ class RAGService:
         if not self.vector_store:
             raise ValueError("Vector store not initialized. Please add documents first.")
         
-        # return [doc.page_content for doc in self.vector_store.similarity_search("", k = 100)]
-        # results = self.vector_store.similarity_search("", k=100)
-        # documents = [doc.page_content for doc in results]
-        # for i in range(len(documents)):
-        #     documents[i] = documents[i].replace("\n", " ")
-        # print("Documents:", documents)
-        # return documents
         documents = []
         # Recherche de tous les documents en utilisant une requête vide
         results = self.vector_store.similarity_search("", k=100)
@@ -129,14 +122,6 @@ class RAGService:
         documents = [doc.replace("\n", " ") for doc in documents]
         return documents
         
-    # def clear(self) -> None:
-    #     """
-    #     Supprime toutes les données du vector store
-    #     """
-    #     if os.path.exists(self.persist_dir):
-    #         shutil.rmtree(self.persist_dir)
-    #         os.makedirs(self.persist_dir)
-    #     self.vector_store = None
     def clear(self) -> None:
         """
         Supprime toutes les données du vector store

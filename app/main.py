@@ -1,10 +1,10 @@
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.router import router as api_router
-from app.services.llm_service import LLMService
+from api.router import router as api_router
+from services.llm_service import LLMService
 import uvicorn
-from app.services.rag_service import RAGService
+from services.rag_service import RAGService
 from fastapi.responses import JSONResponse
 import json
 

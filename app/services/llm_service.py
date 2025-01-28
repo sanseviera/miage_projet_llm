@@ -3,24 +3,23 @@ from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 import os
 from typing import Any, List, Dict
-from app.services.mongo_service import MongoService
+from services.mongo_service import MongoService
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
-from app.services.memory import InMemoryHistory
-from app.services.memoryAdvenced import EnhancedMemoryHistory
-from app.services.chains import SummaryService
-from app.services.tools import AssistantTools
+from services.memory import InMemoryHistory
+from services.memoryAdvenced import EnhancedMemoryHistory
+from services.chains import SummaryService
+from services.tools import AssistantTools
 import os
 from typing import List, Dict, Optional
-from app.services.rag_service import RAGService
+from services.rag_service import RAGService
 import logging 
 import re
 from pymongo.collection import Collection
-
 import uuid
 
 class LLMService:
@@ -49,8 +48,12 @@ class LLMService:
         #     ("human", "{question}")
         # ])
         self.prompt = ChatPromptTemplate.from_messages([
-            ("system", "Vous êtes un assistant utile et concis. "
-                      "Utilisez le contexte fourni pour répondre aux questions."),
+            ("system", "Vous êtes un assistant spécialisé uniquement en ressources humaines. Vous êtes un assistant linguistique IA avec une expertise en ressources humaines (RH)."
+            "Votre objectif principal est de fournir des réponses détaillées et précises liées au recrutement, à la gestion des talents, à l'engagement des employés, aux politiques RH, à la rémunération et aux avantages sociaux, à la conformité et au développement organisationnel,"
+            "aux politiques RH et aux sujets connexes. "
+            "Assurez-vous que vos réponses sont pertinentes pour les professionnels des RH ou les demandeurs d'emploi."
+            "Évitez les interprétations qui ne sont pas liées aux RH, sauf demande explicite."
+            "Pour les questions hors de ce domaine, répondez : 'Je suis désolé, je ne suis spécialisé que dans les ressources humaines.'"),
             ("system", "Contexte : {context}"),
             MessagesPlaceholder(variable_name="history"),
             ("human", "{question}")
@@ -77,15 +80,7 @@ class LLMService:
 
                 # Ajout du service RAG
         self.rag_service = RAGService()
-        
-        # Mise à jour du prompt pour inclure le contexte RAG
-        self.prompt = ChatPromptTemplate.from_messages([
-            ("system", "Vous êtes un assistant utile et concis. "
-                      "Utilisez le contexte fourni pour répondre aux questions."),
-            ("system", "Contexte : {context}"),
-            MessagesPlaceholder(variable_name="history"),
-            ("human", "{question}")
-        ])
+
     
     def _get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         """Récupère ou crée l'historique pour une session donnée"""
@@ -97,9 +92,11 @@ class LLMService:
         if session_id not in self.conversation_store:
             self.conversation_store[session_id] = EnhancedMemoryHistory()
         return self.conversation_store[session_id]
+
     
     async def generate_response(self, message: str, session_id: str, context: Optional[List[Dict[str, str]]] = None, use_rag: bool = False) -> str:
         # Retrieve conversation history
+        
         history = await self.mongo_service.get_conversation_history(session_id)
 
         # Initialize RAG context
@@ -144,7 +141,7 @@ class LLMService:
     async def get_conversation_history(self, session_id: str) -> List[Dict[str, str]]:
         """Récupère l'historique depuis MongoDB"""
         return await self.mongo_service.get_conversation_history(session_id)
-    """ Exo 2 : Ajout de la méthode pour le TP2 """
+
     # Ajout de la méthode pour générer un résumé
     async def generate_summary(self, text: str, max_length: int) -> Dict[str, Any]:
         try:
@@ -171,38 +168,30 @@ class LLMService:
     async def process_with_tools(self, query: str) -> str:
             return await self.tools.process_request(query)
     
-    # async def get_all_conversation_ids(self) -> List[str]:
-    #     try:
-    #         collection: Collection = self.mongo_service.get_collection("conversations")
-    #         session_ids = collection.distinct("session_id")
-    #         return session_ids
-    #     except Exception as e:
-    #         logging.error(f"Error retrieving conversation IDs: {str(e)}")
-    #         raise ValueError(f"Error retrieving conversation IDs: {str(e)}")
 
     async def get_all_conversation_ids(self) -> List[str]:
         collection = self.mongo_service.get_collection("conversations")
         cursor = collection.find({}, {"session_id": 1})
-        sessions = await cursor.to_list(length=None)  # Correctly handle cursor
+        sessions = await cursor.to_list(length=None)  
         return [doc["session_id"] for doc in sessions]
     
     async def create_new_session(self) -> str:
         collection = self.mongo_service.get_collection("conversations")
-
+        
         cursor = collection.find({"session_id": {"$regex": "^session_\\d+$"}}, {"session_id": 1})
         sessions = await cursor.to_list(length=None)
-
+        
         session_numbers = []
         for doc in sessions:
             match = re.match(r"session_(\d+)", doc["session_id"])
             if match:
                 session_numbers.append(int(match.group(1)))
-
+        
         if session_numbers:
             new_number = max(session_numbers) + 1
         else:
             new_number = 1
-
+        
         session_id = f"session_{new_number}"
         new_session = {
             "session_id": session_id,

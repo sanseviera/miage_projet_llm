@@ -2,14 +2,13 @@ from datetime import datetime
 import json
 from fastapi import APIRouter, HTTPException, Body
 from fastapi.responses import JSONResponse
-from app.models.chat import ChatRequestTP1, ChatRequestTP2, ChatRequestWithContext, ChatResponse, SummaryResponse, SummaryRequest, ChatRequestAdv, MemoryTagRequest, MemoryClearRequest, MetadataResponse, ToolRequest
-from app.services.llm_service import LLMService
+from models.chat import ChatRequestTP1, ChatRequestTP2, ChatRequestWithContext, ChatResponse, SummaryResponse, SummaryRequest, ChatRequestAdv, MemoryTagRequest, MemoryClearRequest, MetadataResponse, ToolRequest
+from services.llm_service import LLMService
 from typing import Dict, List
-from app.services.rag_service import RAGService 
+from services.rag_service import RAGService 
 from fastapi import UploadFile, File, Body, HTTPException
 from typing import List
 import os
-
 import mimetypes
 import uuid
 
@@ -88,6 +87,7 @@ async def get_history(session_id: str) -> List[Dict[str, str]]:
         return history_as_str  # On renvoie la liste "typée" comme List[Dict[str, str]]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 # Endpoint to create new chat session
 @router.post("/chat/new-session")
 async def create_new_session() -> dict:
@@ -102,6 +102,7 @@ async def create_new_session() -> dict:
         return {"session_id": session_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 # @router.post("/chat/advanced", response_model=ChatResponse)
 # async def chat_advanced(request: ChatRequestAdv) -> ChatResponse:
 #     """
@@ -176,67 +177,38 @@ async def create_new_session() -> dict:
 #     except Exception as e:
 #         raise HTTPException(status_code=500, detail=str(e))
 
-"""@router.post("/documents/index")
-async def index_documents(
-    files: List[str] = Body(...),
-    clear_existing: bool = Body(False)
-) -> dict:
-
-    try:
-        processed_texts = []
-        upload_dir = "./uploads"
-        os.makedirs(upload_dir, exist_ok=True)  # Ensure the directory exists
-
-        for content in files:
-            # Determine if the content is a PDF or plain text
-            if content.startswith("%PDF-"):
-                # Save the content as a PDF file
-                file_path = os.path.join(upload_dir, f"{uuid.uuid4()}.pdf")
-                with open(file_path, "wb") as f:
-                    f.write(content.encode('latin1'))  # PDF content should be in binary format
-                text = rag_service.extract_text_from_pdf(file_path)
-            else:
-                # Treat the content as plain text
-                text = content
-
-            processed_texts.append(text)
-
-        await rag_service.load_and_index_texts(processed_texts, clear_existing)
-
-        return {"message": "Documents indexed successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))"""
 @router.post("/documents/index")
 async def index_documents(
-    # files: List[str] = Body(...),
-    files: List[UploadFile] = File(...),
+    files: List[str] = Body(...),
     clear_existing: bool = Body(False)
     ) -> dict:
     print(files[0])
     try:
         processed_texts = []
         upload_dir = "./uploads"
-        os.makedirs(upload_dir, exist_ok=True)
+        os.makedirs(upload_dir, exist_ok=True) 
 
-        for file in files:
-            file_path = os.path.join(upload_dir, file.filename)
-            with open(file_path, "wb") as f:
-                f.write(await file.read())
+        for content in files:
+            header, body = content.split(",", 1)
+            filename = header.strip() if header else "unknown_file.txt"
 
-            mimetype,  = mimetypes.guess_type(file_path)
-            if mime_type == "application/pdf":
+            if body.startswith("%PDF-"):
+                file_path = os.path.join(upload_dir, filename)
+                if not file_path.endswith(".pdf"):
+                    file_path += ".pdf"
+                with open(file_path, "wb") as f:
+                    f.write(body.encode("latin1")) 
                 text = rag_service.extract_text_from_pdf(file_path)
-            elif mime_type == "text/plain":
-                with open(file_path, "r", encoding="utf-8") as f:
-                    text = f.read()
+
             else:
-                raise HTTPException(status_code=400, detail="Unsupported file type")
+                text = body.strip()
 
             processed_texts.append(text)
 
         await rag_service.load_and_index_texts(processed_texts, clear_existing)
 
-        return {"message": "Documents indexed successfully"}
+        return {"message": "Documents indexed successfully", "processed_files": [filename for filename in files]}
+        # return {"message": "Documents indexed successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
