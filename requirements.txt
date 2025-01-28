@@ -63,7 +63,7 @@ networkx==3.4.2
 nltk==3.8.1
 numpy==1.26.4
 oauthlib==3.2.2
-openai==1.14.3
+openai
 opencv-python==4.9.0.80
 packaging==23.2
 pandas==2.2.2
