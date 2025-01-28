@@ -1,8 +1,8 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from datetime import datetime
 from typing import List, Dict, Optional
-from models.conversation import Conversation, Message
-from core.config import settings
+from app.models.conversation import Conversation, Message
+from app.core.config import settings
 
 class MongoService:
     def __init__(self):
