@@ -179,32 +179,29 @@ async def create_new_session() -> dict:
 
 @router.post("/documents/index")
 async def index_documents(
-    files: List[str] = Body(...),
+    # files: List[str] = Body(...),
+    files: List[UploadFile] = File(...),
     clear_existing: bool = Body(False)
     ) -> dict:
-    """
-    Endpoint pour indexer des documents
-    
-    Args:
-        texts: Liste des textes à indexer
-        clear_existing: Si True, supprime l'index existant avant d'indexer
-    """
+    print(files[0])
     try:
         processed_texts = []
         upload_dir = "./uploads"
         os.makedirs(upload_dir, exist_ok=True)  # Ensure the directory exists
 
-        for content in files:
-            # Determine if the content is a PDF or plain text
-            if content.startswith("%PDF-"):
-                # Save the content as a PDF file
-                file_path = os.path.join(upload_dir, f"{uuid.uuid4()}.pdf")
-                with open(file_path, "wb") as f:
-                    f.write(content.encode('latin1'))  # PDF content should be in binary format
+        for file in files:
+            file_path = os.path.join(upload_dir, file.filename)
+            with open(file_path, "wb") as f:
+                f.write(await file.read())
+
+            mime_type, _ = mimetypes.guess_type(file_path)
+            if mime_type == "application/pdf":
                 text = rag_service.extract_text_from_pdf(file_path)
+            elif mime_type == "text/plain":
+                with open(file_path, "r", encoding="utf-8") as f:
+                    text = f.read()
             else:
-                # Treat the content as plain text
-                text = content
+                raise HTTPException(status_code=400, detail="Unsupported file type")
 
             processed_texts.append(text)
 
